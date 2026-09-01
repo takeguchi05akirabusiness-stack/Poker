@@ -32,6 +32,21 @@ export interface SpotConfig {
   numBuckets: number;
   /** Monte Carlo trials used to estimate postflop hand-strength buckets. */
   postflopTrials: number;
+  /**
+   * Per-player stack behind (BB) at the moment this subgame begins. Defaults
+   * to `effectiveStackBB` for every player when omitted. Lets a live game
+   * re-solve from the exact current stacks instead of assuming they're equal.
+   */
+  stacksBB?: number[];
+  /**
+   * Per-player chips already committed on `startStreet` before this tree's
+   * root, for resuming mid-street (e.g. the CPU reacting to a human bet
+   * that was placed before the CPU's turn). Defaults to all zeros, i.e. a
+   * fresh street. `potBB` should NOT include these amounts.
+   */
+  initialCommitted?: number[];
+  /** Number of bets/raises already used on `startStreet` before this tree's root. Defaults to 0. */
+  initialNumRaises?: number;
 }
 
 export interface HoldemWorld {

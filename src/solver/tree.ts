@@ -10,6 +10,8 @@ export interface NodeMeta {
   player: number;
   street: Street;
   actions: string[];
+  /** Chips added to the acting player's committedThisStreet by each action, parallel to `actions`. */
+  amounts: number[];
   historyLabel: string;
 }
 
@@ -172,6 +174,7 @@ export function buildTree(config: SpotConfig): { root: PublicNode<HoldemWorld>; 
     const id = nextId++;
     const children: PublicNode<HoldemWorld>[] = [];
     const actionLabels: string[] = [];
+    const actionAmounts: number[] = [];
 
     for (const o of dedup) {
       const newPlayersToAct = new Set(state.playersToAct);
@@ -193,6 +196,7 @@ export function buildTree(config: SpotConfig): { root: PublicNode<HoldemWorld>; 
           );
         }
         actionLabels.push(o.label);
+        actionAmounts.push(o.amount);
         continue;
       }
 
@@ -223,9 +227,10 @@ export function buildTree(config: SpotConfig): { root: PublicNode<HoldemWorld>; 
         })
       );
       actionLabels.push(o.label);
+      actionAmounts.push(o.amount);
     }
 
-    meta.set(id, { id, player: p, street: state.street, actions: actionLabels, historyLabel: state.historyLabel });
+    meta.set(id, { id, player: p, street: state.street, actions: actionLabels, amounts: actionAmounts, historyLabel: state.historyLabel });
 
     return {
       type: 'decision',
@@ -238,14 +243,20 @@ export function buildTree(config: SpotConfig): { root: PublicNode<HoldemWorld>; 
   }
 
   const N = config.numPlayers;
+  const initialCommitted = config.initialCommitted ?? new Array(N).fill(0);
+  const startingStacks = Array.from(
+    { length: N },
+    (_, i) => (config.stacksBB?.[i] ?? config.effectiveStackBB) - initialCommitted[i]
+  );
+  const activePlayers = Array.from({ length: N }, (_, i) => i);
   const initialState: BuildState = {
-    activePlayers: Array.from({ length: N }, (_, i) => i),
-    stacks: new Array(N).fill(config.effectiveStackBB),
-    committedThisStreet: new Array(N).fill(0),
-    totalCommitted: new Array(N).fill(0),
+    activePlayers,
+    stacks: startingStacks,
+    committedThisStreet: initialCommitted.slice(),
+    totalCommitted: initialCommitted.slice(),
     street: config.startStreet,
-    playersToAct: new Set(Array.from({ length: N }, (_, i) => i)),
-    numRaisesThisStreet: 0,
+    playersToAct: new Set(activePlayers.filter((p) => startingStacks[p] > 0)),
+    numRaisesThisStreet: config.initialNumRaises ?? 0,
     afterPlayer: -1,
     historyLabel: '',
   };

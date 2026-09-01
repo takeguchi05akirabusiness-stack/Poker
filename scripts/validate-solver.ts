@@ -214,9 +214,61 @@ async function testSanitySolve() {
   }
 }
 
+// --- Test 4: mid-street resumption (for continual re-solving during live play) ---
+function testMidStreetResume() {
+  // Player 0 already bet 6BB this street (out of a 100BB stack) before player 1's turn.
+  const config: SpotConfig = {
+    numPlayers: 2,
+    actingOrder: [1, 0], // player 1 acts first in this ad-hoc resumed subgame
+    effectiveStackBB: 100,
+    stacksBB: [100, 100],
+    initialCommitted: [6, 0],
+    potBB: 3, // pot from earlier streets, not including the 6BB just bet
+    startStreet: 'turn',
+    board: [c('7d'), c('2c'), c('9h'), c('Ks')],
+    ranges: [fullRangeCombos(), fullRangeCombos()],
+    betAbstraction: defaultBetAbstraction(),
+    numBuckets: 5,
+    postflopTrials: 8,
+  };
+  const { root } = buildTree(config);
+  assert(root.type === 'decision' && root.player === 1, 'root is player 1 facing the existing bet');
+  if (root.type !== 'decision') return;
+  assert(!root.actions.includes('check'), 'player 1 cannot check when facing an existing 6BB bet');
+  assert(root.actions.includes('fold') && root.actions.includes('call'), 'player 1 can fold or call the existing bet');
+
+  for (let t = 0; t < 20; t++) {
+    const world = sampleWorld(config, Math.random);
+    let ok = true;
+    walkAllTerminalPayoffs(root, world, (payoff) => {
+      // The pre-existing 6BB commitment is folded into both the pot-at-showdown and each
+      // player's totalCommitted baseline, so it cancels out just like the general case:
+      // every terminal's payoffs should still sum to exactly the pre-street pot (3BB).
+      const sum = payoff.reduce((a, b) => a + b, 0);
+      if (Math.abs(sum - config.potBB) > 1e-6) ok = false;
+    });
+    assert(ok, `mid-street resume trial ${t}: payoff conservation holds relative to the pre-street pot`);
+    if (!ok) return;
+  }
+
+  const foldChild = root.children[root.actions.indexOf('fold')];
+  if (foldChild.type === 'terminal') {
+    // Player 1 (root's actor) folds here. Net payoffs are relative to each player's own
+    // stake, so player 0 nets only the pre-street pot (their own 6BB bet is "their money"
+    // either way and cancels out) — they don't net player 1's contribution too, since
+    // player 1 never called/committed anything this street before folding.
+    const payoff = foldChild.payoff(sampleWorld(config, Math.random));
+    assert(payoff[0] === config.potBB, 'player 0 nets the pre-street pot when player 1 folds without ever committing this street');
+    assert(payoff[1] === 0, 'player 1 loses nothing beyond what they had already committed (0) by folding immediately');
+  } else {
+    assert(false, 'folding to an existing bet ends the hand immediately');
+  }
+}
+
 async function main() {
   testPayoffConservation();
   testBettingStructure();
+  testMidStreetResume();
   await testSanitySolve();
 }
 

@@ -3,8 +3,9 @@ import { StatusBar } from 'expo-status-bar';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import HandScreen from './src/screens/HandScreen';
 import SolverScreen from './src/screens/SolverScreen';
+import CpuMatchScreen from './src/screens/CpuMatchScreen';
 
-type Tab = 'equity' | 'solver';
+type Tab = 'equity' | 'solver' | 'cpu';
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('equity');
@@ -18,8 +19,11 @@ export default function App() {
         <Pressable style={[styles.tab, tab === 'solver' && styles.tabActive]} onPress={() => setTab('solver')}>
           <Text style={[styles.tabText, tab === 'solver' && styles.tabTextActive]}>GTOソルバー</Text>
         </Pressable>
+        <Pressable style={[styles.tab, tab === 'cpu' && styles.tabActive]} onPress={() => setTab('cpu')}>
+          <Text style={[styles.tabText, tab === 'cpu' && styles.tabTextActive]}>CPU対戦</Text>
+        </Pressable>
       </View>
-      {tab === 'equity' ? <HandScreen /> : <SolverScreen />}
+      {tab === 'equity' ? <HandScreen /> : tab === 'solver' ? <SolverScreen /> : <CpuMatchScreen />}
       <StatusBar style="dark" />
     </SafeAreaView>
   );
