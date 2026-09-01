@@ -1,11 +1,25 @@
+import { useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import HandScreen from './src/screens/HandScreen';
+import SolverScreen from './src/screens/SolverScreen';
+
+type Tab = 'equity' | 'solver';
 
 export default function App() {
+  const [tab, setTab] = useState<Tab>('equity');
+
   return (
     <SafeAreaView style={styles.container}>
-      <HandScreen />
+      <View style={styles.tabBar}>
+        <Pressable style={[styles.tab, tab === 'equity' && styles.tabActive]} onPress={() => setTab('equity')}>
+          <Text style={[styles.tabText, tab === 'equity' && styles.tabTextActive]}>勝率予測</Text>
+        </Pressable>
+        <Pressable style={[styles.tab, tab === 'solver' && styles.tabActive]} onPress={() => setTab('solver')}>
+          <Text style={[styles.tabText, tab === 'solver' && styles.tabTextActive]}>GTOソルバー</Text>
+        </Pressable>
+      </View>
+      {tab === 'equity' ? <HandScreen /> : <SolverScreen />}
       <StatusBar style="dark" />
     </SafeAreaView>
   );
@@ -16,4 +30,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f7f7f9',
   },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#111827',
+    paddingTop: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  tabActive: {
+    borderBottomWidth: 3,
+    borderBottomColor: '#2f6fed',
+  },
+  tabText: { color: '#9aa4b2', fontWeight: '700', fontSize: 13 },
+  tabTextActive: { color: '#fff' },
 });

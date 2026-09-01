@@ -181,7 +181,7 @@ export default function HandScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#f7f7f9' },
-  content: { padding: 14, paddingTop: 54 },
+  content: { padding: 14, paddingTop: 14 },
   title: { fontSize: 18, fontWeight: '800', color: '#111', marginBottom: 12 },
   controlsRow: {
     flexDirection: 'row',
